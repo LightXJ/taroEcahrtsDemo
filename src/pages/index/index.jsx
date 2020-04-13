@@ -1,20 +1,13 @@
 import Taro, { Component } from '@tarojs/taro'
 import { View } from '@tarojs/components'
+import { AtButton } from 'taro-ui';
+import 'taro-ui/dist/style/index.scss' // 全局引入一次即可
 import * as echarts from '../../components/ec-canvas/echarts';
 import './index.less'
 
 
-
-function initChart(canvas, width, height, dpr) {
-  console.log(dpr);
-  const chart = echarts.init(canvas, null, {
-    width: width,
-    height: height,
-    devicePixelRatio: dpr // new
-  });
-  canvas.setChart(chart);
-
-  var option = {
+const initChart = ((type) => {
+  const option = {
     xAxis: {
       type: 'category',
       data: ['M', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
@@ -27,30 +20,47 @@ function initChart(canvas, width, height, dpr) {
       type: 'line'
     }]
   };
-  chart.setOption(option);
-  return chart;
-}
+  switch (type) {
+    case 'h5':
+      return (_this) => {
+        let chart = echarts.init(_this.chartRef.vnode.dom)
+        chart.setOption(option);
+      }
+    case 'weapp':
+      return (canvas, width, height, dpr)=> {
+        const chart = echarts.init(canvas, null, {
+          width: width,
+          height: height,
+          devicePixelRatio: dpr // new
+        });
+        canvas.setChart(chart);
+        chart.setOption(option);
+        return chart;
+      };
+  }
+})(process.env.TARO_ENV)
+
+
 
 export default class Index extends Component {
 
   constructor (props) {
     super(props)
-    this.state = {
-      ec: {
-        onInit: initChart
-      }
+  }
+
+  componentDidMount () { 
+    if( process.env.TARO_ENV=='h5' ){
+      initChart(this);
     }
   }
 
-  componentWillMount () { }
+  jump(){
+    Taro.redirectTo({
+      url: '/pages/lazyload/index'
+    })
+  }
 
-  componentDidMount () { }
 
-  componentWillUnmount () { }
-
-  componentDidShow () { }
-
-  componentDidHide () { }
 
   config = {
     navigationBarTitleText: '首页',
@@ -62,10 +72,15 @@ export default class Index extends Component {
   render () {
     return (
       <View>
-        Hello world
-        <View className="index">
-          <ec-canvas canvas-id='mychart-area' ec={this.state.ec}></ec-canvas>
+        <View className='index'>
+          {
+            {
+              'h5': <View ref={node => this.chartRef = node} style={{width:'100%', height:'400px'}} />,
+              'weapp': <ec-canvas canvas-id='mychart-area' ec={{ lazyload: false, onInit: initChart }}></ec-canvas>
+            }[process.env.TARO_ENV]
+          } 
         </View>
+        <AtButton type='primary' size='small' onClick={this.jump}>懒加载图表</AtButton>
       </View>
     )
   }
