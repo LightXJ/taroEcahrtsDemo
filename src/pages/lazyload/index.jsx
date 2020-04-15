@@ -13,114 +13,78 @@ if (process.env.TARO_ENV === 'h5') {
 
 function setOption(chart) {
   const option = {
-    color: ['#6efcd5', '#41c2fa'],
-    grid: {
-        show: true,
-        left: '3%',
-        right: '3%',
-        top: '30%',
-        bottom: '5%',
-        borderWidth: 0,
-        containLabel: true
+    title: {
+        text: '一天用电量分布',
+        subtext: '纯属虚构'
     },
     tooltip: {
         trigger: 'axis',
         axisPointer: {
-            type: 'shadow',
-            shadowStyle: {
-                color: 'transparent'
-            }
-        },
-        textStyle: {
-            fontSize: 14
-        },
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        formatter: function(params) {
-          console.log('ssss');
-            let text = ''
-            for (let val of params) {
-                text += `
-                    <div style="z-index:999;">
-                        <span style="color:#b3bdcb;">${val.seriesName}：</span>
-                        <span style="color:white;">${val.data.value}${val.data.unit}</span>
-                    </div>
-                `
-            }
-            return text
+            type: 'cross'
+        }
+    },
+    toolbox: {
+        show: true,
+        feature: {
+            saveAsImage: {}
         }
     },
     xAxis: {
         type: 'category',
-        data: ['2018-08'],
-        axisTick: {
-            show: false
-        },
+        boundaryGap: false,
+        data: ['00:00', '01:15', '02:30', '03:45', '05:00', '06:15', '07:30', '08:45', '10:00', '11:15', '12:30', '13:45', '15:00', '16:15', '17:30', '18:45', '20:00', '21:15', '22:30', '23:45']
+    },
+    yAxis: {
+        type: 'value',
         axisLabel: {
-            color: '#b3bdcb',
-            fontSize: 14,
-            interval: 0,
-            rotate: 20,
-            align: 'center',
-            margin: 20
+            formatter: '{value} W'
         },
-        axisLine: {
-            show: false
+        axisPointer: {
+            snap: true
         }
     },
-    yAxis: [{
-            axisTick: {
-                show: false
-            },
-            axisLabel: {
-                color: '#b3bdcb',
-                fontSize: 14
-            },
-            axisLine: {
-                show: false
-            },
-            // // 设置网格的线条颜色
-            splitLine: {
-                show: false
-            }
-        },
+    visualMap: {
+        show: false,
+        dimension: 0,
+        pieces: [{
+            lte: 6,
+            color: 'green'
+        }, {
+            gt: 6,
+            lte: 8,
+            color: 'red'
+        }, {
+            gt: 8,
+            lte: 14,
+            color: 'green'
+        }, {
+            gt: 14,
+            lte: 17,
+            color: 'red'
+        }, {
+            gt: 17,
+            color: 'green'
+        }]
+    },
+    series: [
         {
-            axisTick: {
-                show: false
-            },
-            axisLabel: {
-                color: '#b3bdcb',
-                fontSize: 14
-            },
-            axisLine: {
-                show: false
-            },
-            // // 设置网格的线条颜色
-            splitLine: {
-                show: false
-            }
-        }
-    ],
-    series: [{
-            name: '笔数',
+            name: '用电量',
             type: 'line',
-            data: [{
-                value: 1,
-                unit: ''
-            }],
-            yAxisIndex: 1,
-            lineStyle: {
-                type: 'dotted'
+            smooth: true,
+            data: [300, 280, 250, 260, 270, 300, 550, 500, 400, 390, 380, 390, 400, 500, 600, 750, 800, 700, 600, 400],
+            markArea: {
+                data: [ [{
+                    name: '早高峰',
+                    xAxis: '07:30'
+                }, {
+                    xAxis: '10:00'
+                }], [{
+                    name: '晚高峰',
+                    xAxis: '17:30'
+                }, {
+                    xAxis: '21:15'
+                }] ]
             }
-        },
-        {
-            name: '金额',
-            type: 'bar',
-            data: [{
-                value: 200,
-                unit: '万'
-            }],
-            yAxisIndex: 0,
-            barWidth: '20%'
         }
     ]
   };
@@ -128,14 +92,6 @@ function setOption(chart) {
 }
 
 export default class Index extends Component {
-
-  constructor (props) {
-    super(props)
-    this.state = {
-      isLoaded: false,
-      isDisposed: false
-    }
-  }
 
   componentDidMount () { 
   }
@@ -156,11 +112,6 @@ export default class Index extends Component {
         // 将图表实例绑定到 this 上，可以在其他成员函数（如 dispose）中访问
         this._chart = chart;
   
-        this.setState({
-          isLoaded: true,
-          isDisposed: false
-        });
-  
         // 注意这里一定要返回 chart 实例，否则会影响事件处理等
         return chart;
       });
@@ -168,21 +119,7 @@ export default class Index extends Component {
       let chart = echarts.init(this.chartRef.vnode.dom)
       setOption(chart);
       this._chart = chart;
-      this.setState({
-        isLoaded: true,
-        isDisposed: false
-      });
     }
-  }
-
-  dispose=()=>{
-    if (this._chart) {
-      this._chart.dispose();
-    }
-
-    this.setState({
-      isDisposed: true
-    });
   }
 
   jump(){
@@ -199,11 +136,9 @@ export default class Index extends Component {
   }
 
   render () {
-    const { isLoaded, isDisposed } = this.state;
     return (
       <View>
          <AtButton onClick={this.init} >加载图表</AtButton>
-        {isLoaded && !isDisposed && <AtButton onClick={this.dispose} >释放图表</AtButton>}
         <View className='index'>
           {
             {
@@ -212,7 +147,7 @@ export default class Index extends Component {
             }[process.env.TARO_ENV]
           } 
         </View>
-        {/* <AtButton type='primary' size='small' onClick={this.jump}>正常图表</AtButton> */}
+        <AtButton type='primary' size='small' onClick={this.jump}>正常图表</AtButton>
       </View>
     )
   }
